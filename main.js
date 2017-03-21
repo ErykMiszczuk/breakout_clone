@@ -24,15 +24,20 @@ var mainState = {
 
 		for (let i = 0; i < 7; i++) {
 			for (let j = 0; j < 5; j++) {
-				var brick = game.add.sprite(55+i*80, 55+j*45, 'brick');
+				let brick = game.add.sprite(55+i*80, 55+j*45, 'brick');
 				let hp = game.rnd.integerInRange(1, 3);
 				brick.health = hp;
+				let tintVar = hp * 3;
+				brick.tint = "0x"+tintVar+tintVar+tintVar+tintVar+tintVar+tintVar;
 				brick.body.immovable = true;
 				this.bricks.add(brick);
 			}
 		}
 
 		this.ball = game.add.sprite(200, 300, 'ball');
+		this.ball.anchor.setTo(0.5);
+		// Line of code below is buggy and I don't know why
+		// this.ball.body.setCircle(16);
 		this.ball.body.velocity.x = 200;
 		this.ball.body.velocity.y = 200;
 
@@ -47,11 +52,11 @@ var mainState = {
 	},
 	update: function() {
 
-		if (this.left.isDown) this.paddle.body.velocity.x  = -300;
-		else if (this.right.isDown) this.paddle.body.velocity.x = 300;
+		if (this.left.isDown) this.paddle.body.velocity.x  = -350;
+		else if (this.right.isDown) this.paddle.body.velocity.x = 350;
 		else this.paddle.body.velocity.x = 0;
 
-		game.physics.arcade.collide(this.paddle, this.ball);
+		game.physics.arcade.collide(this.ball, this.paddle, this.paddleBounce, null, this);
 		game.physics.arcade.collide(this.ball, this.bricks, this.hit, null, this);
 
 		if (this.ball.y > this.paddle.y)
@@ -66,12 +71,22 @@ var mainState = {
 		}
 		this.updateText();
 		brick.damage(1);
+		let tintVar = brick.health * 3;
+		brick.tint = "0x"+tintVar+tintVar+tintVar+tintVar+tintVar+tintVar;
+		// TODO: Randomize bounce angle after brick hitting.
+		// ball.body.velocity.y = -1*ball.body.velocity.y;
+		// ball.body.velocity.x = -1*ball.body.velocity.x;
+		// ball.body.velocity.x = 1*4*(ball.x - brick.x);
 	},
 	changeBackColor: function() {
 		return game.rnd.pick(colorsArray);
 	},
 	updateText: function() {
 		this.text.setText(this.bricksCount);
+	},
+	paddleBounce: function(ball, paddle) {
+		ball.body.velocity.x = -1*4*(paddle.x - ball.x);
+		ball.body.velocity.y = -250;
 	}
 };
 
