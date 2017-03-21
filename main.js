@@ -1,3 +1,60 @@
+var mainMenu = {
+	preload: function() {
+
+	},
+	create: function() {
+		game.stage.backgroundColor = game.rnd.pick(colorsArray);
+		this.text = game.add.text(game.world.centerX, game.world.centerY / 6, "- BreakoutClone -");
+
+    //  Centers the text
+    this.text.anchor.set(0.5);
+    this.text.align = 'center';
+
+    //  Our font + size
+    this.text.font = 'Arial';
+    this.text.fontWeight = 'bold';
+    this.text.fontSize = 70;
+    this.text.fill = '#ffffff';
+
+    //  Here we create our fake reflection :)
+    //  It's just another Text object, with an alpha gradient and flipped vertically
+
+    this.textReflect = game.add.text(game.world.centerX, game.world.centerY / 6 + 50, "- BreakoutClone -");
+
+    //  Centers the text
+    this.textReflect.anchor.set(0.5);
+    this.textReflect.align = 'center';
+    this.textReflect.scale.y = -1;
+
+    //  Our font + size
+    this.textReflect.font = 'Arial';
+		this.textReflect.fontWeight = 'bold';
+    this.textReflect.fontSize = 70;
+
+    //  Here we create a linear gradient on the Text context.
+    //  This uses the exact same method of creating a gradient as you do on a normal Canvas context.
+    var grd = this.textReflect.context.createLinearGradient(0, 0, 0, this.text.canvas.height);
+
+    //  Add in 2 color stops
+    grd.addColorStop(0, 'rgba(255,255,255,0)');
+    grd.addColorStop(1, 'rgba(255,255,255,0.08)');
+
+    //  And apply to the Text
+    this.textReflect.fill = grd;
+		var style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
+		this.ng = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6, "New game", style);
+		this.ng.anchor.setTo(0.5,0.5)
+		this.ng.inputEnabled = true;
+		this.ng.events.onInputUp.add(function() {
+			game.state.start('main');
+		})
+	},
+	update: function() {
+		// alert("Do gry!");
+		// game.state.start('main');
+
+	}
+}
 var mainState = {
 	preload: function() {
 
@@ -45,6 +102,7 @@ var mainState = {
 		this.ball.body.collideWorldBounds = true;
 
 		this.bricksCount = this.bricks.children.length;
+		userData.bricksDestroyed += this.bricksCount;
 
 		var style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
 		this.text = game.add.text(10, 10, this.bricksCount, style);
@@ -60,11 +118,13 @@ var mainState = {
 		game.physics.arcade.collide(this.ball, this.bricks, this.hit, null, this);
 
 		if (this.ball.y > this.paddle.y)
-		game.state.start('main');
+		this.gameRepeat();
 		if (0 >= this.bricksCount)
-		game.state.start('main');
+		game.state.start('menu');
+
 	},
 	hit: function(ball, brick) {
+
 		if(brick.health - 1 == 0) {
 			this.bricksCount -= 1;
 			game.stage.backgroundColor = this.changeBackColor();
@@ -77,6 +137,7 @@ var mainState = {
 		// ball.body.velocity.y = -1*ball.body.velocity.y;
 		// ball.body.velocity.x = -1*ball.body.velocity.x;
 		// ball.body.velocity.x = 1*4*(ball.x - brick.x);
+
 	},
 	changeBackColor: function() {
 		return game.rnd.pick(colorsArray);
@@ -87,12 +148,23 @@ var mainState = {
 	paddleBounce: function(ball, paddle) {
 		ball.body.velocity.x = -1*4*(paddle.x - ball.x);
 		ball.body.velocity.y = -250;
+	},
+	gameRepeat: function() {
+		userData.repeats += 1;
+		userData.bricksDestroyed -= this.bricksCount;
+		game.state.start('main');
 	}
+};
+
+var userData = {
+	repeats: 0,
+	bricksDestroyed: 0
 };
 
 var game = new Phaser.Game(700,500);
 game.state.add('main', mainState);
-game.state.start('main');
+game.state.add('menu', mainMenu);
+game.state.start('menu');
 
 // Material pallete colors
 var colorsArray = [
