@@ -61,6 +61,8 @@ var mainState = {
 
 		game.load.image('brick', 'brick.png');
 		game.load.image('ball', 'ball.png');
+		game.load.audio('metalHit', 'metal_hit.ogg');
+		game.load.audio('woodHit', 'wood_hit.ogg');
 
 	},
 	create: function() {
@@ -105,10 +107,12 @@ var mainState = {
 		this.ball.body.collideWorldBounds = true;
 
 		this.bricksCount = this.bricks.children.length;
-		userData.bricksDestroyed += this.bricksCount;
 
 		let style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
 		this.text = game.add.text(10, 10, this.bricksCount, style);
+		this.metalHit = game.add.audio('metalHit');
+		this.woodHit = game.add.audio('woodHit');
+		this.woodHit.volume = 0.5;
 
 	},
 	update: function() {
@@ -124,7 +128,7 @@ var mainState = {
 
 		if (this.ball.y > this.paddle.y)
 		this.gameRepeat();
-		if (0 >= this.bricksCount)
+		if (0 >= this.bricksCount && !this.pauseData.pause)
 		this.gamePause();
 
 	},
@@ -132,8 +136,11 @@ var mainState = {
 
 		if(brick.health - 1 == 0) {
 			this.bricksCount -= 1;
+			this.metalHit.play();
 			game.stage.backgroundColor = this.changeBackColor();
+			userData.bricksDestroyed ++;
 		}
+		this.woodHit.play();
 		this.updateText();
 		brick.damage(1);
 		let tintVar = brick.health * 3;
@@ -153,10 +160,11 @@ var mainState = {
 	paddleBounce: function(ball, paddle) {
 		ball.body.velocity.x = -1*4*(paddle.x - ball.x);
 		ball.body.velocity.y = -250;
+		this.woodHit.play();
 	},
 	gameRepeat: function() {
 		userData.repeats += 1;
-		userData.bricksDestroyed -= this.bricksCount;
+		this.pauseData.pause = false;
 		game.state.start('main');
 	},
 	gamePause: function() {
@@ -171,9 +179,7 @@ var mainState = {
 	},
 	gamePausing: function() {
 		// pauseData.pause = true;
-		console.log(this.pauseData.ball.x);
 		this.pauseData.ball.x = this.ball.body.velocity.x;
-		console.log(this.pauseData.ball.x);
 		this.pauseData.ball.y = this.ball.body.velocity.y;
 		this.pauseData.paddle.x = this.paddle.body.velocity.x;
 		this.pauseData.paddle.y = this.paddle.body.velocity.y;
@@ -201,6 +207,7 @@ var mainState = {
 		this.ngp.anchor.setTo(0.5,0.5)
 		this.ngp.inputEnabled = true;
 		this.ngp.events.onInputUp.add(function() {
+			this.pauseData.pause = false;
 			game.state.start('main');
 		});
 		this.mm = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6 + lineHeight, "Menu Główne", style);
@@ -208,14 +215,13 @@ var mainState = {
 		this.mm.inputEnabled = true;
 		this.mm.events.onInputUp.add(function() {
 			game.state.start('menu');
+			this.pauseData.pause = false;
 		});
 		this.rep = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6 + 2 * lineHeight, "Powtórz", style);
 		this.rep.anchor.setTo(0.5,0.5)
 		this.rep.inputEnabled = true;
-		this.rep.events.onInputUp.add(function() {
-			this.gameRepeat();
-		});
-		let points = Math.floor(userData.bricksDestroyed / userData.repeats);
+		this.rep.events.onInputUp.add(this.gameRepeat, this);
+		let points = Math.floor(userData.bricksDestroyed);
 		userData.points = points;
 		this.poi = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6 + -1 * lineHeight, 'Pun', style);
 		this.poi.anchor.setTo(0.5, 0.5);
@@ -246,7 +252,7 @@ pauseData: {
 };
 
 var userData = {
-	repeats: 0,
+	repeats: 1,
 	bricksDestroyed: 0,
 	points: 0
 };
