@@ -1,3 +1,5 @@
+'use strict';
+
 var mainMenu = {
 	preload: function() {
 
@@ -15,6 +17,8 @@ var mainMenu = {
     this.text.fontWeight = 'bold';
     this.text.fontSize = 70;
     this.text.fill = '#ffffff';
+		this.text.stroke = '#242424';
+		this.text.strokeThickness = 3;
 
     //  Here we create our fake reflection :)
     //  It's just another Text object, with an alpha gradient and flipped vertically
@@ -37,11 +41,11 @@ var mainMenu = {
 
     //  Add in 2 color stops
     grd.addColorStop(0, 'rgba(255,255,255,0)');
-    grd.addColorStop(1, 'rgba(255,255,255,0.08)');
+    grd.addColorStop(1, 'rgba(255,255,255,0.15)');
 
     //  And apply to the Text
     this.textReflect.fill = grd;
-		var style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
+		let style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
 		this.ng = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6, "New game", style);
 		this.ng.anchor.setTo(0.5,0.5)
 		this.ng.inputEnabled = true;
@@ -50,9 +54,6 @@ var mainMenu = {
 		})
 	},
 	update: function() {
-		// alert("Do gry!");
-		// game.state.start('main');
-
 	}
 }
 var mainState = {
@@ -70,6 +71,7 @@ var mainState = {
 
 		this.left = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 		this.right = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+		this.pauseKey = game.input.keyboard.addKey(Phaser.Keyboard.P);
 
 		this.paddle = game.add.sprite(game.world.centerX, 450, 'brick');
 		this.paddle.anchor.setTo(0.5);
@@ -97,6 +99,7 @@ var mainState = {
 		// this.ball.body.setCircle(16);
 		this.ball.body.velocity.x = 200;
 		this.ball.body.velocity.y = 200;
+		this.ball.tint = 0xffffff;
 
 		this.ball.body.bounce.setTo(1);
 		this.ball.body.collideWorldBounds = true;
@@ -104,7 +107,7 @@ var mainState = {
 		this.bricksCount = this.bricks.children.length;
 		userData.bricksDestroyed += this.bricksCount;
 
-		var style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
+		let style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
 		this.text = game.add.text(10, 10, this.bricksCount, style);
 
 	},
@@ -114,13 +117,15 @@ var mainState = {
 		else if (this.right.isDown) this.paddle.body.velocity.x = 350;
 		else this.paddle.body.velocity.x = 0;
 
+		this.pauseKey.onUp.add(this.gamePause, this);
+
 		game.physics.arcade.collide(this.ball, this.paddle, this.paddleBounce, null, this);
 		game.physics.arcade.collide(this.ball, this.bricks, this.hit, null, this);
 
 		if (this.ball.y > this.paddle.y)
 		this.gameRepeat();
 		if (0 >= this.bricksCount)
-		game.state.start('menu');
+		this.gamePause();
 
 	},
 	hit: function(ball, brick) {
@@ -153,18 +158,118 @@ var mainState = {
 		userData.repeats += 1;
 		userData.bricksDestroyed -= this.bricksCount;
 		game.state.start('main');
+	},
+	gamePause: function() {
+		this.pauseData.pause = !this.pauseData.pause;
+		if(this.pauseData.pause) {
+			this.gamePausing();
+			console.log('pauza');
+		} else {
+			this.gameUnPausing();
+			console.log('koniec pauzy');
+		}
+	},
+	gamePausing: function() {
+		// pauseData.pause = true;
+		console.log(this.pauseData.ball.x);
+		this.pauseData.ball.x = this.ball.body.velocity.x;
+		console.log(this.pauseData.ball.x);
+		this.pauseData.ball.y = this.ball.body.velocity.y;
+		this.pauseData.paddle.x = this.paddle.body.velocity.x;
+		this.pauseData.paddle.y = this.paddle.body.velocity.y;
+		this.ball.body.velocity.x = 0;
+		this.ball.body.velocity.y = 0;
+		this.paddle.body.velocity.x = 0;
+		this.paddle.body.velocity.y = 0;
+		this.menuPause();
+	},
+	gameUnPausing: function() {
+		// pauseData.pause = false;
+		this.menuUnPause();
+		this.ball.body.velocity.x = this.pauseData.ball.x;
+		this.ball.body.velocity.y = this.pauseData.ball.y;
+		this.paddle.body.velocity.x = this.pauseData.paddle.x;
+		this.paddle.body.velocity.y = this.pauseData.paddle.y;
+	},
+	menuPause: function() {
+		if(this.pauseData.pause) {
+
+		// this.paused = true;
+		let lineHeight = 45;
+		let style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
+		this.ngp = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6, "Nowa gra", style);
+		this.ngp.anchor.setTo(0.5,0.5)
+		this.ngp.inputEnabled = true;
+		this.ngp.events.onInputUp.add(function() {
+			game.state.start('main');
+		});
+		this.mm = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6 + lineHeight, "Menu Główne", style);
+		this.mm.anchor.setTo(0.5,0.5)
+		this.mm.inputEnabled = true;
+		this.mm.events.onInputUp.add(function() {
+			game.state.start('menu');
+		});
+		this.rep = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6 + 2 * lineHeight, "Powtórz", style);
+		this.rep.anchor.setTo(0.5,0.5)
+		this.rep.inputEnabled = true;
+		this.rep.events.onInputUp.add(function() {
+			this.gameRepeat();
+		});
+		let points = Math.floor(userData.bricksDestroyed / userData.repeats);
+		userData.points = points;
+		this.poi = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6 + -1 * lineHeight, 'Pun', style);
+		this.poi.anchor.setTo(0.5, 0.5);
+		let pointText = "Punkty : "+points;
+		this.poi.setText(pointText);
+		}
+	},
+	menuUnPause: function() {
+	if(!this.pauseData.pause) {
+		this.ngp.destroy();
+		this.mm.destroy();
+		this.rep.destroy();
+		this.poi.destroy();
+		// this.paused = false;
 	}
+},
+pauseData: {
+	pause: false,
+	ball: {
+		x: 0,
+		y: 0
+	},
+	paddle: {
+		x: 0,
+		y: 0
+	}
+}
 };
 
 var userData = {
 	repeats: 0,
-	bricksDestroyed: 0
+	bricksDestroyed: 0,
+	points: 0
 };
+
 
 var game = new Phaser.Game(700,500);
 game.state.add('main', mainState);
 game.state.add('menu', mainMenu);
 game.state.start('menu');
+
+// window.addEventListener('keydown', function(event){
+// 	if(event.keyCode == Phaser.Keyboard.P) {
+// 		game.paused = !game.paused;
+// 		console.log('paused');
+// 		game.state.states.main.gamePause();
+// 	}
+// })
+
+// window.onkeydown = function(e) {
+// 	if(e.keyCode == Phaser.Keyboard.P) {
+// 		console.log('pauze');
+// 	}
+// }
 
 // Material pallete colors
 var colorsArray = [
