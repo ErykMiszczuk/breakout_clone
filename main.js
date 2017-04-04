@@ -61,6 +61,7 @@ var mainState = {
 
 		game.load.image('brick', 'brick.png');
 		game.load.image('ball', 'ball.png');
+		game.load.image('arrow', 'arrow.png');
 		game.load.audio('metalHit', 'metal_hit.ogg');
 		game.load.audio('woodHit', 'wood_hit.ogg');
 
@@ -112,14 +113,56 @@ var mainState = {
 		this.text = game.add.text(10, 10, this.bricksCount, style);
 		this.metalHit = game.add.audio('metalHit');
 		this.woodHit = game.add.audio('woodHit');
-		this.woodHit.volume = 0.5;
+		this.woodHit.volume = 0.3;
+
+		this.arrowLeft = game.add.button(35, 465, 'arrow', null, this)
+		this.arrowLeft.anchor.setTo(0.5, 0.5);
+		this.arrowLeft.scale.setTo(-0.35, 0.35);
+		this.arrowLeft.fixedToCamera = true;
+		this.arrowLeft.events.onInputOver.add(function() {
+			mainState.steerState.left = true;
+			mainState.steerState.right = false;
+		});
+		this.arrowLeft.events.onInputDown.add(function() {
+			mainState.steerState.left = true;
+			mainState.steerState.right = false;
+		});
+		this.arrowLeft.events.onInputUp.add(function() {
+			mainState.steerState.left = false;
+			mainState.steerState.right = false;
+		});
+		this.arrowLeft.events.onInputOut.add(function() {
+			mainState.steerState.left = false;
+			mainState.steerState.right = false;
+		});
+
+		this.arrowRight = game.add.button(665, 465, 'arrow', null, this)
+		this.arrowRight.anchor.setTo(0.5, 0.5);
+		this.arrowRight.scale.setTo(0.35, 0.35);
+		this.arrowRight.fixedToCamera = true;
+		this.arrowRight.events.onInputOver.add(function() {
+			mainState.steerState.left = false;
+			mainState.steerState.right = true;
+		});
+		this.arrowRight.events.onInputDown.add(function() {
+			mainState.steerState.left = false;
+			mainState.steerState.right = true;
+		});
+		this.arrowRight.events.onInputUp.add(function() {
+			mainState.steerState.left = false;
+			mainState.steerState.right = false;
+		});
+		this.arrowRight.events.onInputOut.add(function() {
+			mainState.steerState.left = false;
+			mainState.steerState.right = false;
+		});
 
 	},
 	update: function() {
 
-		if (this.left.isDown) this.paddle.body.velocity.x  = -350;
-		else if (this.right.isDown) this.paddle.body.velocity.x = 350;
-		else this.paddle.body.velocity.x = 0;
+		if (this.left.isDown || (this.steerState.left && !this.steerState.right)){this.steering.goLeft();}
+		else if (this.right.isDown || (!this.steerState.left && this.steerState.right)) {this.steering.goRight();}
+		else {this.steering.noMove();}
 
 		this.pauseKey.onUp.add(this.gamePause, this);
 
@@ -131,6 +174,21 @@ var mainState = {
 		if (0 >= this.bricksCount && !this.pauseData.pause)
 		this.gamePause();
 
+	},
+	steerState: {
+		left: false,
+		right: false
+	},
+	steering: {
+		goLeft: function() {
+			mainState.paddle.body.velocity.x  = -350;
+		},
+		goRight: function() {
+			mainState.paddle.body.velocity.x  = 350;
+		},
+		noMove: function() {
+			mainState.paddle.body.velocity.x  = 0;
+		}
 	},
 	hit: function(ball, brick) {
 
@@ -158,7 +216,7 @@ var mainState = {
 		this.text.setText(this.bricksCount);
 	},
 	paddleBounce: function(ball, paddle) {
-		ball.body.velocity.x = -1*4*(paddle.x - ball.x);
+		ball.body.velocity.x = -1*3*(paddle.x - ball.x);
 		ball.body.velocity.y = -250;
 		this.woodHit.play();
 	},
@@ -178,7 +236,6 @@ var mainState = {
 		}
 	},
 	gamePausing: function() {
-		// pauseData.pause = true;
 		this.pauseData.ball.x = this.ball.body.velocity.x;
 		this.pauseData.ball.y = this.ball.body.velocity.y;
 		this.pauseData.paddle.x = this.paddle.body.velocity.x;
@@ -190,7 +247,6 @@ var mainState = {
 		this.menuPause();
 	},
 	gameUnPausing: function() {
-		// pauseData.pause = false;
 		this.menuUnPause();
 		this.ball.body.velocity.x = this.pauseData.ball.x;
 		this.ball.body.velocity.y = this.pauseData.ball.y;
@@ -199,8 +255,6 @@ var mainState = {
 	},
 	menuPause: function() {
 		if(this.pauseData.pause) {
-
-		// this.paused = true;
 		let lineHeight = 45;
 		let style = {font: "35px Arial", fill: "white", stroke: "#242424", strokeThickness: 3, align: "left"}
 		this.ngp = game.add.text(game.world.centerX, game.world.centerY / 3 + game.world.centerY / 6, "Nowa gra", style);
@@ -235,7 +289,6 @@ var mainState = {
 		this.mm.destroy();
 		this.rep.destroy();
 		this.poi.destroy();
-		// this.paused = false;
 	}
 },
 pauseData: {
@@ -262,20 +315,6 @@ var game = new Phaser.Game(700,500);
 game.state.add('main', mainState);
 game.state.add('menu', mainMenu);
 game.state.start('menu');
-
-// window.addEventListener('keydown', function(event){
-// 	if(event.keyCode == Phaser.Keyboard.P) {
-// 		game.paused = !game.paused;
-// 		console.log('paused');
-// 		game.state.states.main.gamePause();
-// 	}
-// })
-
-// window.onkeydown = function(e) {
-// 	if(e.keyCode == Phaser.Keyboard.P) {
-// 		console.log('pauze');
-// 	}
-// }
 
 // Material pallete colors
 var colorsArray = [
